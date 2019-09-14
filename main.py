@@ -4,7 +4,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__, template_folder='templates', static_url_path='/static/', static_folder='static')
-socket = SocketIO(app)
+socket = SocketIO(app, threaded=True)
 
 players = {}
 
