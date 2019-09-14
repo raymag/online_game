@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser-arcade-physics.min.js"></script>
+</head>
+<body>
+
+<script>
+var config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    },
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    }
+};
+
+var game = new Phaser.Game(config);
+var players = [];
+var createdPlayers = [];
+const socket = io();
+
+socket.on('bootstrap', (newPlayers) => {
+    players = newPlayers;
+});
+
+socket.on('gameUpdate', (newPlayers) => {
+    players = newPlayers;
+});
+
+socket.on('playerDisconnected', (id) => {
+    createdPlayers[id].destroy(true);
+    delete createdPlayers[id];
+    delete players[id];
+});
+
+function preload ()
+{
+    this.load.image('ground', "{{ url_for('static', filename='./assets/ground.png') }}" );
+    this.load.image('player',  "{{ url_for('static', filename='./assets/player.png') }}");
+    this.load.image('sky',  "{{ url_for('static', filename='./assets/sky.png') }}");
+}
+
+function create ()
+{
+    this.add.image(0, 0, 'sky').setOrigin(0, 0);
+    // this.add.image(0, 500, 'ground').setOrigin(0, 0);
+    // this.add.image(350, 450, 'player').setScale(.05);
+
+    platforms = this.physics.add.staticGroup();
+    platforms.create(0, 500, 'ground').setOrigin(0, 0).refreshBody();
+
+    player = this.physics.add.sprite(350, 450, 'player').setScale(.05);
+    // this.game.physics.arcade.enable(sprite);
+    player.setBounce(.02);
+    player.setCollideWorldBounds(true);
+    player.body.setGravityY(100);
+
+    this.physics.add.collider(player, platforms);
+}
+
+function update ()
+{
+    for( const [key, value] of Object.entries(players) ){
+        if( key in createdPlayers ){
+            createdPlayers[key].x = value.x;
+            createdPlayers[key].y = value.y;
+            console.log('player existente atualizado');
+        }else{
+            let newPlayer = this.physics.add.sprite(350, 450, 'player').setScale(.05);
+            newPlayer.setBounce(.02);
+            newPlayer.setCollideWorldBounds(true);
+            newPlayer.body.setGravityY(100);
+            createdPlayers[key] = newPlayer;
+            console.log('player inexistente adicionado');
+        }
+    }
+
+    cursors = this.input.keyboard.createCursorKeys();
+    if( cursors.left.isDown ){
+        player.setVelocityX(-160);
+    }
+    else if( cursors.right.isDown ){
+        player.setVelocityX(160);
+    }
+    else{
+        player.setVelocityX(0);
+    }
+
+    if( cursors.up.isDown && player.body.touching.down ){
+        player.setVelocityY(-330);
+    }
+    socket.emit('playerUpdate', {'x':player.x, 'y':player.y})
+    // this.physics.arcade.enable(createdPlayers);
+}    
+</script>
+
+</body>
+</html>
