@@ -18,6 +18,7 @@ def conn():
         'x': 350,
         'y': 450
     }
+    # print(request.sid)
     players[request.sid] = player
     return emit('bootstrap', players)
 

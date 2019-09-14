@@ -61,48 +61,53 @@ function create ()
     platforms = this.physics.add.staticGroup();
     platforms.create(0, 500, 'ground').setOrigin(0, 0).refreshBody();
 
-    player = this.physics.add.sprite(350, 450, 'player').setScale(.05);
-    // this.game.physics.arcade.enable(sprite);
-    player.setBounce(.02);
-    player.setCollideWorldBounds(true);
-    player.body.setGravityY(100);
+    // player = this.physics.add.sprite(350, 450, 'player').setScale(.05);
+    // player.setBounce(.02);
+    // player.setCollideWorldBounds(true);
+    // player.body.setGravityY(100);
 
-    this.physics.add.collider(player, platforms);
+    // this.physics.add.collider(player, platforms);
 }
 
 function update ()
 {
     for( const [key, value] of Object.entries(players) ){
         if( key in createdPlayers ){
-            createdPlayers[key].x = value.x;
-            createdPlayers[key].y = value.y;
-            console.log('player existente atualizado');
+            if(key != socket.id){
+                createdPlayers[key].x = value.x;
+                createdPlayers[key].y = value.y;
+                // console.log('player existente atualizado');
+            }
         }else{
             let newPlayer = this.physics.add.sprite(350, 450, 'player').setScale(.05);
             newPlayer.setBounce(.02);
             newPlayer.setCollideWorldBounds(true);
             newPlayer.body.setGravityY(100);
+            this.physics.add.collider(newPlayer, platforms);
             createdPlayers[key] = newPlayer;
-            console.log('player inexistente adicionado');
+            // console.log('player inexistente adicionado');
         }
     }
 
     cursors = this.input.keyboard.createCursorKeys();
-    
-    if( cursors.left.isDown ){
-        player.setVelocityX(-160); 
-    }
-    else if( cursors.right.isDown ){
-        player.setVelocityX(160);
-    }
-    else{
-        player.setVelocityX(0);
-    }
+    if(socket.id){
+        console.log(socket.id);
+        if( cursors.left.isDown ){
+            createdPlayers[socket.id].setVelocityX(-160); 
+            console.log(createdPlayers[socket.id].x);
+        }
+        else if( cursors.right.isDown ){
+            createdPlayers[socket.id].setVelocityX(160);
+        }
+        else{
+            createdPlayers[socket.id].setVelocityX(0);
+        }
 
-    if( cursors.up.isDown && player.body.touching.down ){
-        player.setVelocityY(-330);
-    }
-    socket.emit('playerUpdate', {'x':player.x, 'y':player.y})
+        if( cursors.up.isDown && createdPlayers[socket.id].body.touching.down ){
+            createdPlayers[socket.id].setVelocityY(-330);
+        }
+    }    
+    socket.emit('playerUpdate', {'x':createdPlayers[socket.id].x, 'y':createdPlayers[socket.id].y})
     // this.physics.arcade.enable(createdPlayers);
 }    
 </script>
